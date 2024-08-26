@@ -3,7 +3,7 @@ package styles
 import "github.com/charmbracelet/lipgloss"
 
 // Styles
-var ListStyle = lipgloss.NewStyle().Margin(4, 10, 0)
+var ListStyle = lipgloss.NewStyle().Margin(4, 10, 0).Width(60)
 
 var TextareaStyle = lipgloss.NewStyle().
 	Border(lipgloss.NormalBorder(), false, true, false, false).
@@ -48,3 +48,12 @@ var BannerText = `
 ███████╗╚██████╔╝╚██████╔╝██║██║ ╚████║
 ╚══════╝ ╚═════╝  ╚═════╝ ╚═╝╚═╝  ╚═══╝
 `
+
+// logo style
+var Logostyle = lipgloss.NewStyle().
+	Width(50).
+	Height(1).
+	Align(lipgloss.Center).
+	Bold(true).
+	Foreground(lipgloss.Color("#7571F9")).
+	Render("NotionTerm.sh")

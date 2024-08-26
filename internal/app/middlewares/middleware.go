@@ -3,6 +3,7 @@ package middlewares
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
@@ -16,10 +17,11 @@ import (
 	"github.com/charmbracelet/wish/bubbletea"
 	"github.com/muesli/termenv"
 
-	_ "github.com/lib/pq"
 	"notion_ssh_app/internal/app/db"
 	"notion_ssh_app/internal/app/models"
 	"notion_ssh_app/internal/styles"
+
+	_ "github.com/lib/pq"
 )
 
 // Define the main model struct
@@ -34,6 +36,7 @@ type Model struct {
 	LoggedIn     bool
 	User         UserDetails
 	Dimensions   models.Dimensions
+	SplashActive bool
 }
 
 type UserDetails struct {
@@ -67,9 +70,19 @@ type ViewportViewModel struct {
 	Content  string
 }
 
+type SplashFinishedMsg struct{}
+
 // Init method
 
 func (m Model) Init() tea.Cmd {
+	if m.SplashActive {
+		// If the splash screen is active, return a command to wait for 2 seconds before proceeding
+		return tea.Batch(
+			tea.Tick(time.Second*5, func(_ time.Time) tea.Msg {
+				return SplashFinishedMsg{} // Custom message to signal splash screen end
+			}),
+		)
+	}
 
 	if m.FormModel != nil && m.FormModel.Form != nil {
 		// If the form model is not nil, initialize the form
@@ -139,6 +152,16 @@ func (m Model) View() string {
 		return "exiting the ssh session"
 	}
 
+	formWidth := 50
+	formHeight := 10
+
+	if m.SplashActive {
+		// Display the splash screen with the service name
+
+		return lipgloss.Place(m.Dimensions.TotalWidth, m.Dimensions.TotalHeight, lipgloss.Center, lipgloss.Center, styles.Logostyle)
+
+	}
+
 	// Prioritize the current view after form submission
 	if m.LoggedIn {
 		switch m.CurrentView {
@@ -155,9 +178,6 @@ func (m Model) View() string {
 			return m.ListView.View() // Default to list view if logged in
 		}
 	}
-
-	formWidth := 50
-	formHeight := 10
 
 	// Style for the form
 	formView := lipgloss.NewStyle().
@@ -248,6 +268,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// Handle messages for resizing and input events
 	switch msg := msg.(type) {
+	case SplashFinishedMsg:
+		// Disable splash screen and proceed to form initialization
+		m.SplashActive = false
+		return m, m.Init() // Re-call Init to initialize the form or fetch items
+
+	// Other cases...
+
 	case tea.WindowSizeMsg:
 		// Adjust the sizes of the views based on window size
 		m.ListView.List.SetSize(msg.Width-20, msg.Height-10)
@@ -416,6 +443,7 @@ func ListMiddleware() wish.Middleware {
 			FormModel: &FormModel{
 				Form: form,
 			},
+			SplashActive: true,
 			ListView:     ListViewModel{List: l},
 			TextareaView: TextareaViewModel{Textarea: t},
 			ViewportView: ViewportViewModel{Viewport: v},
