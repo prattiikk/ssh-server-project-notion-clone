@@ -75,6 +75,8 @@ type SplashFinishedMsg struct{}
 // Init method
 
 func (m Model) Init() tea.Cmd {
+	lipgloss.SetColorProfile(termenv.TrueColor)
+
 	if m.SplashActive {
 		// If the splash screen is active, return a command to wait for 2 seconds before proceeding
 		return tea.Batch(
