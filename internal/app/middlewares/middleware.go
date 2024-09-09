@@ -40,7 +40,7 @@ type Model struct {
 }
 
 type UserDetails struct {
-	Username string
+	email string
 	Password string
 	user_id  int
 }
@@ -92,10 +92,10 @@ func (m Model) Init() tea.Cmd {
 		return m.FormModel.Form.Init()
 	}
 	return func() tea.Msg {
-		// Fetch the user's list items based on the username stored in the form
-		username := m.FormModel.Form.GetString("username")
+		// Fetch the user's list items based on the email stored in the form
+		email := m.FormModel.Form.GetString("email")
 		// password := m.FormModel.Form.GetString("password")
-		fmt.Println(username)
+		fmt.Println(email)
 		return db.FetchItems(m.User.user_id)
 	}
 
@@ -128,7 +128,7 @@ func (m ViewportViewModel) View() string {
 // 	// }
 
 // 	if m.formModel.state == huh.StateCompleted {
-// 		return m.formModel.style.Render("Welcome, " + m.formModel.form.GetString("username") + "!")
+// 		return m.formModel.style.Render("Welcome, " + m.formModel.form.GetString("email") + "!")
 // 	}
 // 	switch m.currentView {
 // 	case 1:
@@ -159,7 +159,7 @@ func (m Model) View() string {
 
 	if m.SplashActive {
 		// Display the splash screen with the service name
-
+		lipgloss.SetColorProfile(termenv.TrueColor)
 		return lipgloss.Place(m.Dimensions.TotalWidth, m.Dimensions.TotalHeight, lipgloss.Center, lipgloss.Center, styles.Logostyle)
 
 	}
@@ -204,12 +204,30 @@ func (m Model) View() string {
 	// Render the form content
 	loginForm := formView.Render(m.FormModel.Form.View())
 
+	// Style for the registration link
+	linkStyle := lipgloss.NewStyle().
+	Foreground(lipgloss.Color("#7571F9")). // Blue color for the link
+	Bold(true).
+	Underline(true)
+
+	// Style for the non-link text
+	textStyle := lipgloss.NewStyle().
+	Foreground(lipgloss.Color("#FFFFFF")) // White color for the rest of the text
+
+	registrationTextStyle := textStyle.Copy().
+    MarginTop(4) // Add a margin to the entire sentence (top and bottom)
+
+	// Define the registration text with a styled link
+	registrationText := registrationTextStyle.Render(
+    "Don't have an account? Register here: ") +
+    linkStyle.Render("https://terminal-notes-client.vercel.app/")
+
+
 	// Combine the title and form
-	combinedView := lipgloss.JoinVertical(lipgloss.Center, title, loginForm)
+	combinedView := lipgloss.JoinVertical(lipgloss.Center, title, loginForm, registrationText)
 
 	// Center the combined view in the terminal
 	finalView := lipgloss.Place(m.Dimensions.TotalWidth, m.Dimensions.TotalHeight, lipgloss.Center, lipgloss.Center, combinedView)
-
 	return finalView
 }
 
@@ -234,12 +252,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case huh.StateCompleted:
 			if !m.LoggedIn {
-				// Get the username and password from the form fields
-				username := m.FormModel.Form.GetString("username")
+				// Get the email and password from the form fields
+				email := m.FormModel.Form.GetString("email")
 				password := m.FormModel.Form.GetString("password")
 
 				// Attempt to authenticate the user
-				userID, err := db.Authenticate(username, password)
+				userID, err := db.Authenticate(email, password)
 				if err != nil {
 					// Handle any database errors (e.g., connection issues)
 					fmt.Println("Error during authentication:", err)
@@ -247,7 +265,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				} else if userID != nil {
 					// Successfully authenticated; store the user ID and redirect to the list view
 					m.User.user_id = *userID
-					m.User.Username = username
+					m.User.email = email
 					m.LoggedIn = true
 					m.CurrentView = 1
 
@@ -258,8 +276,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds, cmd)
 				} else {
 					// Handle invalid credentials
-					fmt.Println("Invalid username or password")
-					// m.ErrorMessage = "Invalid username or password"
+					fmt.Println("Invalid email or password")
+					// m.ErrorMessage = "Invalid email or password"
 				}
 
 				// Return the updated model and combined commands
@@ -334,7 +352,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 				// Add the new item to the database
-				err := db.AddItemToDB(newItem)
+				err := db.AddItemToDB(newItem, m.User.user_id)
 				if err != nil {
 					fmt.Println("Error adding item to database:", err)
 				} else {
@@ -424,7 +442,7 @@ func ListMiddleware() wish.Middleware {
 		form := huh.NewForm(
 			huh.NewGroup(
 
-				huh.NewInput().Title("Username").Key("username"),
+				huh.NewInput().Title("email").Key("email"),
 				huh.NewInput().Title("Password").Key("password").EchoMode(huh.EchoModePassword),
 			),
 		)

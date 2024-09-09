@@ -15,7 +15,7 @@ import (
 
 // OpenDB opens and returns a database connection.
 func OpenDB() (*sql.DB, error) {
-	connStr := "postgresql://article%20list_owner:UnHc9jlDV7Oo@ep-orange-bush-a19fqe45.ap-southeast-1.aws.neon.tech/article%20list?sslmode=require"
+	connStr := "postgresql://postgres.ynnukjdinctcawdnbwym:oNt3syahe3uhgFeO@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
@@ -23,24 +23,9 @@ func OpenDB() (*sql.DB, error) {
 	return db, nil
 }
 
-// AddItemToDB adds a new item to the database.
-func AddItemToDB(item models.ListItemViewModel) error {
-	db, err := OpenDB()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	query := `INSERT INTO items (ItemTitle, description, content, user_id) VALUES ($1, $2, $3, $4)`
-	_, err = db.Exec(query, item.ItemTitle, item.Desc, item.Content, 1)
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 // Authenticate checks if the user exists and returns the user ID if valid, otherwise returns nil
-func Authenticate(username, password string) (*int, error) {
+func Authenticate(email, password string) (*int, error) {
 	db, err := OpenDB()
 	if err != nil {
 		return nil, err // Return nil for the ID and the error
@@ -48,11 +33,13 @@ func Authenticate(username, password string) (*int, error) {
 	defer db.Close()
 
 	var userID int
+	fmt.Println("before query ", email, password)
 	query := `
-        SELECT id FROM users WHERE username = $1 AND password = $2 LIMIT 1;
+        SELECT id FROM "User" WHERE email = $1 AND password = $2 LIMIT 1;
     `
-	err = db.QueryRow(query, username, password).Scan(&userID)
+	err = db.QueryRow(query, email, password).Scan(&userID)
 
+	fmt.Println("after the query ", userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // User not found
@@ -63,6 +50,30 @@ func Authenticate(username, password string) (*int, error) {
 	return &userID, nil // User found, return their ID
 }
 
+
+
+
+
+// AddItemToDB adds a new item to the database for a specific user.
+func AddItemToDB(item models.ListItemViewModel, userId int) error {
+	db, err := OpenDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	// Use the provided userId instead of hardcoding it
+	query := `INSERT INTO "Item" (title, description, content, "userId") VALUES ($1, $2, $3, $4)`
+	_, err = db.Exec(query, item.ItemTitle, item.Desc, item.Content, userId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+
+
+
 // FetchItems fetches the items for a specific user from the database
 func FetchItems(userID int) tea.Msg {
 	db, err := OpenDB() // OpenDB is a function that connects to the database
@@ -72,13 +83,16 @@ func FetchItems(userID int) tea.Msg {
 	}
 	defer db.Close()
 
+	fmt.Println("before fetching items ", userID)
+
 	// Prepare the query to fetch items for the given userID
 	query := `
-        SELECT ItemTitle, description, content 
-        FROM items 
-        WHERE user_id = $1;
+        SELECT title, description, content 
+        FROM "Item" 
+        WHERE "userId" = $1;
     `
 	rows, err := db.Query(query, userID)
+	fmt.Println("after fetching items", rows)
 	if err != nil {
 		fmt.Println("Error querying the database:", err)
 		return models.ItemsMsg{Items: []models.ListItemViewModel{}}

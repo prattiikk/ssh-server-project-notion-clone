@@ -54,6 +54,5 @@ var Logostyle = lipgloss.NewStyle().
 	Width(50).
 	Height(1).
 	Align(lipgloss.Center).
-	Bold(true).
 	Foreground(lipgloss.Color("#7571F9")).
 	Render("NotionTerm.sh")
