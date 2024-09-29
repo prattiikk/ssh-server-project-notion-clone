@@ -23,7 +23,6 @@ func OpenDB() (*sql.DB, error) {
 	return db, nil
 }
 
-
 // Authenticate checks if the user exists and returns the user ID if valid, otherwise returns nil
 func Authenticate(email, password string) (*int, error) {
 	db, err := OpenDB()
@@ -50,10 +49,6 @@ func Authenticate(email, password string) (*int, error) {
 	return &userID, nil // User found, return their ID
 }
 
-
-
-
-
 // AddItemToDB adds a new item to the database for a specific user.
 func AddItemToDB(item models.ListItemViewModel, userId int) error {
 	db, err := OpenDB()
@@ -63,16 +58,13 @@ func AddItemToDB(item models.ListItemViewModel, userId int) error {
 	defer db.Close()
 
 	// Use the provided userId instead of hardcoding it
-	query := `INSERT INTO "Item" (title, description, content, "userId") VALUES ($1, $2, $3, $4)`
+	query := `INSERT INTO "Note" (title, description, content, "userId") VALUES ($1, $2, $3, $4)`
 	_, err = db.Exec(query, item.ItemTitle, item.Desc, item.Content, userId)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-
-
-
 
 // FetchItems fetches the items for a specific user from the database
 func FetchItems(userID int) tea.Msg {
@@ -88,7 +80,7 @@ func FetchItems(userID int) tea.Msg {
 	// Prepare the query to fetch items for the given userID
 	query := `
         SELECT title, description, content 
-        FROM "Item" 
+        FROM "Note" 
         WHERE "userId" = $1;
     `
 	rows, err := db.Query(query, userID)
