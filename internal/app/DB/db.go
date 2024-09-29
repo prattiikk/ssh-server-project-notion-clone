@@ -135,3 +135,6 @@ func CheckDBVersion() {
 	}
 	fmt.Printf("version=%s\n", version)
 }
+
+
+// items -> notes
