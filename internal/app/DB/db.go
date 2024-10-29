@@ -15,7 +15,13 @@ import (
 
 // OpenDB opens and returns a database connection.
 func OpenDB() (*sql.DB, error) {
-	connStr := "postgresql://postgres.ynnukjdinctcawdnbwym:oNt3syahe3uhgFeO@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+
+	// old supabase url
+	// connStr := "postgresql://postgres.ynnukjdinctcawdnbwym:oNt3syahe3uhgFeO@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+	
+	// new neondb url
+	connStr :=  "postgresql://neondb_owner:brKhqlgovT64@ep-lingering-bonus-a1uns5iz-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
